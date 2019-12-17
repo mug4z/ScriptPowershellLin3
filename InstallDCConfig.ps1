@@ -1,11 +1,10 @@
 <#
 Author: Timothee Frily
-Purpose: Install and config 
-TODO: Demander a Michel pour le NTP
-      Trouver comment mettre le filter * sur Get-Aduser et Get-ADOrganizationalUnit
+Purpose: Install and config Active Directory
+Warning : NTP command in this script don't work with vmware workstation
 #>
 
-#--------------Variables---------------#
+#--------------Variables----------------------------------------------------------------------------------------------------------------#
 $ComputerName = "SRV-DC-01"
 
 
@@ -27,7 +26,7 @@ $DomainPassword = ConvertTo-SecureString 'Pa$$w0rd' -AsPlainText -Force
 #----SetUsers----#
 $UsersPassword  = ConvertTo-SecureString 'Pa$$w0rd' -AsPlainText -Force
 
-#--------------Functions---------------#
+#--------------Functions-----------------------------------------------------------------------------------------------------------------#
 function Rename-Computers {
     Write-Host "Un redémarrage de la machine est nécessaire a la fin de cette action"
     Rename-Computer -NewName $ComputerName 
@@ -53,39 +52,37 @@ function Set-Users {
     New-ADUser -Name "user_2" -GivenName "user2" -Surname "user2" -SamAccountName "user_2" -UserPrincipalName "user_2@$DCNameTeam.local" -Path "OU=$OUNameUsers,OU=$OUNameTeam,DC=$DCNameTeam,DC=local" -AccountPassword $UsersPassword -Enabled $true
 }
 
+# Ces commandes ne fonctionne pas sur VMWARE workstation.
 function Install-NTP {
     Stop-Service W32Time
-    w32tm.exe  /config /syncfromflags:MANUAL /manualpeerlist:time-a-g.nist.gov,time-b-g.nist.gov,time-c-g.nist.gov,time-d-g.nist.gov /reliable:YES
+    w32tm.exe /config /syncfromflags:MANUAL /manualpeerlist:time-a-g.nist.gov,time-b-g.nist.gov,time-c-g.nist.gov,time-d-g.nist.gov /reliable:YES
     Start-Service W32Time
     w32tm.exe /resync /rediscover
-
-    
 }
 
 
-#--------------Main---------------#
+#--------------Main-----------------------------------------------------------------------------------------------------------------#
 #----Check Computer Name----#
 if (!($env:COMPUTERNAME -eq $ComputerName)) {
     Rename-Computers
 }
 
 #---Check AD---#
-if (!(Get-WindowsFeature -Name "AD-Domain-services").InstallState) {
+if (!(Get-WindowsFeature -Name "AD-Domain-services").InstallState) -eq "Installed" {
     Install-AD
 }
 
 #---Check OU---#
-if () {
+if (!(Get-ADOrganizationalUnit -filter *).name -match $OUNameTeam -and $OUNameUsers -and $OUNameComputer) {
+    Set-OU
     
-    Get-ADOrganizationalUnit
 }
 
 #---Check Users---#
-if () {
-    Get-Aduser 
+if (!(Get-Aduser -filter *).name -match "user_1" -and "user_2") {
+     Set-Users
 }
 
 #---Check NTP---#
-if () {
-    
-}
+w32tm.exe /query /source
+Write-Host "Here the NTP server check if this is the right name"
