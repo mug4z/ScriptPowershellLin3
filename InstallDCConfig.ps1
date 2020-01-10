@@ -37,8 +37,7 @@ function Install-AD {
     Import-Module ADDSDeployment #OK
     Install-ADDSForest -DomainName "$DCNameTeam.local" -CreateDnsDelegation:$false -DatabasePath "C:\Windows\NTDS" -DomainMode "7" -DomainNetbiosName $NetBiosName -ForestMode "7" -InstallDns:$true -LogPath "C:\Windows\NTDS" -NoRebootOnCompletion:$True -SysvolPath "C:\Windows\SYSVOL" -Force:$true -SafeModeAdministratorPassword $DomainPassword
     Write-Host "La machine rebootera dans 5 secondes"
-    sleep 5
-    shutdown.exe -r /t 0
+    shutdown.exe -r /t 5
 } # ----> ok
 
 function Set-OU {
@@ -68,7 +67,7 @@ if (!($env:COMPUTERNAME -eq $ComputerName)) {
 }
 
 #---Check AD---#
-if (!(Get-WindowsFeature -Name "AD-Domain-services").InstallState) -eq "Installed" {
+if (!((Get-WindowsFeature -Name "AD-Domain-services").InstallState) -eq "Installed") {
     Install-AD
 }
 
@@ -84,5 +83,6 @@ if (!(Get-Aduser -filter *).name -match "user_1" -and "user_2") {
 }
 
 #---Check NTP---#
+Install-NTP
 w32tm.exe /query /source
 Write-Host "Here the NTP server check if this is the right name"
