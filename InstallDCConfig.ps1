@@ -1,5 +1,5 @@
 <#
-Author: Timothee Frily
+Author: Timothee Frily, Samuel Malherbe
 Purpose: Install and config Active Directory
 Warning : NTP command in this script don't work with vmware workstation
 #>
